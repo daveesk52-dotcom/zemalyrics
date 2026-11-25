@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZemaLyrics — English & Amharic</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f1115;
+      color: #f3f4f6;
+      font-family: 'Inter', 'Noto Sans Ethiopic', sans-serif;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .app { width: 100%; max-width: 520px; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 1.8rem; color: #10b981; }
+    .subtitle { color: #9ca3af; font-size: 0.9rem; margin-top: 4px; }
+    .search-box { display: flex; gap: 8px; margin-bottom: 12px; }
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #2d3139;
+      background: #181b20;
+      color: #fff;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+    .search-box input { flex: 1; }
+    button {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 10px;
+      background: #10b981;
+      color: #062118;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { opacity: 0.9; }
+    .mic-btn {
+      width: 100%;
+      background: #1f2937;
+      color: #10b981;
+      border: 1px solid #10b981;
+      margin-bottom: 10px;
+    }
+    .mic-btn.listening { background: #dc2626; color: #fff; border-color: #dc2626; }
+    .add-btn {
+      width: 100%;
+      background: #262a32;
+      color: #f3f4f6;
+      border: 1px solid #374151;
+      margin-bottom: 20px;
+    }
+    .empty-box {
+      background: #181b20;
+      border: 1px dashed #374151;
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+      margin-top: 10px;
+    }
+    .empty-box p { color: #9ca3af; margin-bottom: 12px; font-size: 0.92rem; }
+    .status { text-align: center; color: #9ca3af; margin-bottom: 12px; font-size: 0.9rem; }
+    .card {
+      background: #181b20;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      border: 1px solid #262a32;
+    }
+    .card:hover { border-color: #10b981; }
+    .card h3 { font-size: 1.05rem; }
+    .card p { color: #9ca3af; font-size: 0.85rem; margin-top: 4px; }
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      background: #064e3b;
+      color: #6ee7b7;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-top: 6px;
+    }
+    .hidden { display: none !important; }
+    .lyric-view {
+      background: #181b20;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #2d3139;
+    }
+    .back-btn { background: #262a32; color: #fff; padding: 6px 12px; margin-bottom: 14px; }
+    .artist { color: #9ca3af; margin-bottom: 16px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+    .tab { flex: 1; background: #262a32; color: #d1d5db; padding: 8px; font-size: 0.85rem; }
+    .tab.active { background: #10b981; color: #062118; }
+    .lyrics-body {
+      white-space: pre-wrap;
+      line-height: 1.75;
+      font-size: 1.05rem;
+      font-family: inherit;
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+    .modal-content {
+      background: #181b20;
+      border: 1px solid #2d3139;
+      border-radius: 12px;
+      padding: 18px;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-content h3 { color: #10b981; margin-bottom: 4px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .modal-actions button { flex: 1; }
+    .cancel-btn { background: #374151; color: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>🎵 ZemaLyrics</h1>
+      <p class="subtitle">English & አማርኛ Lyrics Finder</p>
+    </header>
+
+    <div class="controls">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search song, artist, or lyrics..." />
+        <button id="searchBtn">Search</button>
+      </div>
+      <button id="micBtn" class="mic-btn">🎤 Tap to Listen</button>
+      <button id="openAddBtn" class="add-btn">+ Add Amharic Song</button>
+    </div>
+
+    <div id="status" class="status"></div>
+    <div id="results" class="results"></div>
+
+    <!-- Lyric Reader View -->
+    <div id="lyricView" class="lyric-view hidden">
+      <button id="backBtn" class="back-btn">← Back</button>
+      <h2 id="songTitle"></h2>
+      <p id="songArtist" class="artist"></p>
+      <div id="scriptTabs" class="tabs hidden">
+        <button class="tab active" data-mode="amharic">አማርኛ</button>
+        <button class="tab" data-mode="translit">Latin (Finglish)</button>
+        <button class="tab" data-mode="english">English Meaning</button>
+      </div>
+      <pre id="lyricsBody" class="lyrics-body"></pre>
+    </div>
+
+    <!-- Add / Contribute Amharic Song Modal -->
+    <div id="addModal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Add / Contribute Amharic Track</h3>
+        <input type="text" id="newTitle" placeholder="Song Title (e.g. Kegna / ከኛ)" />
+        <input type="text" id="newArtist" placeholder="Artist Name" />
+        <textarea id="newAmharic" rows="3" placeholder="Lyrics in አማርኛ..."></textarea>
+        <textarea id="newTranslit" rows="3" placeholder="Transliteration (Finglish)..."></textarea>
+        <textarea id="newEnglish" rows="3" placeholder="English Meaning (optional)..."></textarea>
+        <div class="modal-actions">
+          <button id="saveSongBtn">Save to Cloud</button>
+          <button id="cancelSongBtn" class="cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://qpllbxeqibrbmakguuet.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_6ZoOSOJTI21ghTOcih5PoQ_U-VteJ5f";
+
+    const hasSupabaseConfig =
+      SUPABASE_URL.startsWith("https://") &&
+      SUPABASE_ANON_KEY.length > 20 &&
+      !SUPABASE_URL.includes("YOUR_");
+
+    const db = hasSupabaseConfig
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    const FALLBACK_SONGS = [
+      {
+        id: "am-1",
+        title: "Tizita (ትዝታ)",
+        artist: "Mahmoud Ahmed",
+        lang: "Amharic",
+        amharic: "ትዝታሽ ዘወትር ወደ እኔ እየመጣ\nእንቅልፌን ነሳኝ ሌሊቱ ሳይነጋ\nፍቅርሽ በልቤ ውስጥ ገብቶ ተቀምጧል\nመርሳት አልቻልኩም ጊዜው ቢረዝምም",
+        translit: "Tizitash zewetir wede ene eyemeta\nEnkilfen nesagn lelitu sayinega\nFikirish belibe wist gebto tekemitwal\nMersat alchalkum gizew birezimim",
+        english: "Your memory keeps coming back to me\nIt stole my sleep before the night even dawned\nYour love has entered and settled inside my heart\nI could not forget, no matter how long time passes"
+      },
+      {
+        id: "am-2",
+        title: "Tikur Sew (ጥቁር ሰው)",
+        artist: "Teddy Afro",
+        lang: "Amharic",
+        amharic: "ጥቁር ሰው ታሪክ ሰራ\nበአድዋ ተራራ\nለነፃነት ክብር ቆሞ\nዓለምን አስደነቀ",
+        translit: "Tikur sew tarik sera\nBeAdwa terara\nLenetsanet kibir komo\nAlemin asdeneke",
+        english: "A Black man made history\nOn the mountains of Adwa\nStanding for the honor of freedom\nHe amazed the entire world"
+      }
+    ];
+
+    const STORAGE_KEY = "zemalyrics_amharic_v1";
+    let amharicSongs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [...FALLBACK_SONGS];
+
+    const searchInput = document.getElementById("searchInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const micBtn = document.getElementById("micBtn");
+    const openAddBtn = document.getElementById("openAddBtn");
+    const addModal = document.getElementById("addModal");
+    const saveSongBtn = document.getElementById("saveSongBtn");
+    const cancelSongBtn = document.getElementById("cancelSongBtn");
+    const statusEl = document.getElementById("status");
+    const resultsEl = document.getElementById("results");
+    const lyricView = document.getElementById("lyricView");
+    const backBtn = document.getElementById("backBtn");
+    const scriptTabs = document.getElementById("scriptTabs");
+    const lyricsBody = document.getElementById("lyricsBody");
+
+    let currentSong = null;
+
+    async function loadCloudSongs() {
+      if (!db) return;
+      const { data, error } = await db
+        .from("songs")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        amharicSongs = data;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(amharicSongs));
+      }
+    }
+
+    function renderCards(songs, query = "") {
+      resultsEl.innerHTML = "";
+      if (!songs.length) {
+        const emptyBox = document.createElement("div");
+        emptyBox.className = "empty-box";
+        const safeQuery = query.replace(/"/g, "&quot;");
+        emptyBox.innerHTML = `
+          <p>No lyrics found${query ? ` for "<strong>${safeQuery}</strong>"` : ""}. Help grow the library!</p>
+          <button id="contributeEmptyBtn">+ Submit Lyrics for This Song</button>
+        `;
+        resultsEl.appendChild(emptyBox);
+        document.getElementById("contributeEmptyBtn").onclick = () => {
+          document.getElementById("newTitle").value = query;
+          addModal.classList.remove("hidden");
+        };
+        return;
+      }
+
+      songs.forEach(song => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h3>${song.title}</h3>
+          <p>${song.artist}</p>
+          <span class="badge">${song.lang || "Amharic"}</span>
+        `;
+        card.onclick = () => openSong(song);
+        resultsEl.appendChild(card);
+      });
+    }
+
+    async function searchSongs() {
+      const query = searchInput.value.trim();
+      lyricView.classList.add("hidden");
+
+      if (!query) {
+        statusEl.textContent = (db ? "Cloud Library (" : "Local Library (") + amharicSongs.length + ")";
+        renderCards(amharicSongs);
+        return;
+      }
+
+      resultsEl.innerHTML = "";
+      statusEl.textContent = "Searching English & Amharic libraries...";
+
+      const qLower = query.toLowerCase();
+      const amharicMatches = amharicSongs.filter(song =>
+        (song.title && song.title.toLowerCase().includes(qLower)) ||
+        (song.artist && song.artist.toLowerCase().includes(qLower)) ||
+        (song.amharic && song.amharic.includes(query)) ||
+        (song.translit && song.translit.toLowerCase().includes(qLower))
+      );
+
+      let globalMatches = [];
+      try {
+        const res = await fetch("https://lrclib.net/api/search?q=" + encodeURIComponent(query));
+        if (res.ok) {
+          const data = await res.json();
+          globalMatches = data.slice(0, 8).map(item => ({
+            id: "lrc-" + item.id,
+            title: item.trackName,
+            artist: item.artistName,
+            lang: "English / Global",
+            plainLyrics: item.plainLyrics || "No plain lyrics available for this track."
+          }));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+
+      const combined = [...amharicMatches, ...globalMatches];
+      statusEl.textContent = combined.length
+        ? "Found " + combined.length + " result(s)"
+        : "0 results found";
+      renderCards(combined, query);
+    }
+
+    function openSong(song) {
+      currentSong = song;
+      resultsEl.innerHTML = "";
+      statusEl.textContent = "";
+      lyricView.classList.remove("hidden");
+      document.getElementById("songTitle").textContent = song.title;
+      document.getElementById("songArtist").textContent = song.artist;
+
+      if (song.lang === "English / Global") {
+        scriptTabs.classList.add("hidden");
+        lyricsBody.textContent = song.plainLyrics;
+      } else {
+        scriptTabs.classList.remove("hidden");
+        setScriptMode("amharic");
+      }
+    }
+
+    function setScriptMode(mode) {
+      document.querySelectorAll(".tab").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === mode);
+      });
+      lyricsBody.textContent = (currentSong && currentSong[mode]) || "Not added yet.";
+    }
+
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.onclick = () => setScriptMode(btn.dataset.mode);
+    });
+
+    backBtn.onclick = () => {
+      lyricView.classList.add("hidden");
+      searchSongs();
+    };
+
+    searchBtn.onclick = searchSongs;
+    searchInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") searchSongs();
+    });
+
+    openAddBtn.onclick = () => addModal.classList.remove("hidden");
+    cancelSongBtn.onclick = () => addModal.classList.add("hidden");
+
+    saveSongBtn.onclick = async () => {
+      const title = document.getElementById("newTitle").value.trim();
+      const artist = document.getElementById("newArtist").value.trim();
+      const amharic = document.getElementById("newAmharic").value.trim();
+      const translit = document.getElementById("newTranslit").value.trim();
+      const english = document.getElementById("newEnglish").value.trim();
+
+      if (!title || !artist || (!amharic && !translit)) {
+        alert("Please enter at least the song title, artist, and Amharic or Latin lyrics.");
+        return;
+      }
+
+      const payload = {
+        title,
+        artist,
+        lang: "Amharic",
+        amharic: amharic || "—",
+        translit: translit || "—",
+        english: english || "—"
+      };
+
+      if (db) {
+        saveSongBtn.disabled = true;
+        saveSongBtn.textContent = "Saving...";
+        const { data, error } = await db.from("songs").insert(payload).select().single();
+        saveSongBtn.disabled = false;
+        saveSongBtn.textContent = "Save to Cloud";
+
+        if (error) {
+          alert("Could not save to Supabase: " + error.message);
+          return;
+        }
+        amharicSongs.unshift(data);
+      } else {
+        amharicSongs.unshift({ id: "am-" + Date.now(), ...payload });
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(amharicSongs));
+
+      ["newTitle", "newArtist", "newAmharic", "newTranslit", "newEnglish"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+      addModal.classList.add("hidden");
+      searchInput.value = "";
+      searchSongs();
+    };
+
+    micBtn.onclick = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusEl.textContent = "Mic requires HTTPS or localhost. Host it online to test mic!";
+        return;
+      }
+      try {
+        micBtn.classList.add("listening");
+        micBtn.textContent = "Listening (5s)...";
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        const chunks = [];
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          micBtn.classList.remove("listening");
+          micBtn.textContent = "🎤 Tap to Listen";
+          const blob = new Blob(chunks, { type: "audio/webm" });
+          statusEl.textContent = "Captured " + (blob.size / 1024).toFixed(1) + " KB clip!";
+        };
+        recorder.start();
+        setTimeout(() => recorder.stop(), 5000);
+      } catch (err) {
+        micBtn.classList.remove("listening");
+        micBtn.textContent = "🎤 Tap to Listen";
+        statusEl.textContent = "Mic blocked: " + err.message;
+      }
+    };
+
+    (async () => {
+      await loadCloudSongs();
+      searchSongs();
+    })();
+  </script>
+</body>
+</html>
